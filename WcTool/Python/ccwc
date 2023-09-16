@@ -3,6 +3,9 @@
 """
 This is the main file for the WcTool. We will implement Linux WC tool in
 Python. We will use the argparse module to parse the command line arguments.
+
+How to run: ccwc -lwcm filename 
+filename: it is the name of the file to be processed 
 """
 
 """ 
@@ -37,8 +40,6 @@ import unicodedata
 
 
 # Defining the Constants
-
-INPUT_FILE_PATH_DIR = "/Users/rkathawate/Desktop/Rakshit_Projects/SoftwareCodingChallenges/WcTool"
 
 # Defining the worker functions
 
@@ -274,7 +275,10 @@ def main():
     parser.add_argument("-m", "--multibyte", help="Count characters (if locale supports multibyte), otherwise count bytes.", action="store_true")  
     args = parser.parse_args()
     print("The name of the file is: ", args.filename)
-    filepath = os.path.join(INPUT_FILE_PATH_DIR, args.filename)
+    # filepath = os.path.join(INPUT_FILE_PATH_DIR, args.filename)
+    current_dir = os.getcwd()
+    filepath = os.path.join(current_dir, args.filename)
+    print("Current directory is: ", current_dir)
     print("The filepath is: ", filepath)
     if args.bytes:
         file_bytes = count_bytes(filepath)
