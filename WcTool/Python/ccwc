@@ -17,7 +17,29 @@ INPUT_FILE_PATH_DIR = "/Users/rkathawate/Desktop/Rakshit_Projects/SoftwareCoding
 
 # Defining the worker functions
 
-#write docstring 
+def count_lines(filepath):
+
+    """
+    Counts the number of lines in the file object provided.
+
+    Args:
+        filepath (str): The path to the file to be processed.
+
+    Returns:
+        int: The number of lines in the file.
+    """
+    #count lines in the file object provided
+    file_object = open_file(filepath, "r")
+    if file_object is None:
+        print("File not found.")
+        return None
+
+    # not-good for large files as it reads the entire file into memory
+    #file_lines = file_object.readlines()
+
+    line_count = sum(1 for line in file_object)
+    close_file(file_object)
+    return line_count
 
 def count_bytes(filepath):
     """
@@ -112,6 +134,7 @@ def main():
     parser = argparse.ArgumentParser(description="This is a Python implementation of the Linux WC tool.")
     parser.add_argument("filename", help="Name of the file to be processed.")
     parser.add_argument("-c", "--bytes", help="Count the number of bytes in the file.", action="store_true")
+    parser.add_argument("-l", "--lines", help="Count the number of lines in the file.", action="store_true")    
     args = parser.parse_args()
     print("The name of the file is: ", args.filename)
     filepath = os.path.join(INPUT_FILE_PATH_DIR, args.filename)
@@ -121,6 +144,12 @@ def main():
         expected_output = str(file_bytes) + " " + filepath + "\n"
         print("Command Output: ", expected_output)
         command = "wc -c " + filepath
+        validate_command(command, expected_output)
+    if args.lines:
+        file_lines = count_lines(filepath)
+        expected_output = str(file_lines) + " " + filepath + "\n"
+        print("Command Output: ", expected_output)
+        command = "wc -l " + filepath
         validate_command(command, expected_output)
         
 
