@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+
+
 """
 This is the main file for the WcTool. We will implement Linux WC tool in
 Python. We will use the argparse module to parse the command line arguments.
