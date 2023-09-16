@@ -302,6 +302,26 @@ def main():
         print("Command Output for No of Characters: ", expected_output)
         command = "wc -m " + filepath
         validate_command(command, expected_output)
+    
+    # if no options are provided use default options
+    if not (args.bytes or args.lines or args.words or args.multibyte):
+        file_bytes = count_bytes(filepath)
+        print("No of Bytes: ", file_bytes)
+        expected_output = str(file_bytes) + " " + filepath + "\n"
+        command = "wc -c " + filepath
+        validate_command(command, expected_output)
+
+        file_lines = count_lines(filepath)
+        print("No of Lines: ", file_lines)
+        expected_output = str(file_lines) + " " + filepath + "\n"
+        command = "wc -l " + filepath
+        validate_command(command, expected_output)
+
+        file_words = count_words(filepath)
+        print("No of Words: ", file_words)
+        expected_output = str(file_words) + " " + filepath + "\n"
+        command = "wc -w " + filepath
+        validate_command(command, expected_output)
 
 
 # Calling the main function
