@@ -15,13 +15,20 @@ import subprocess
 
 INPUT_FILE_PATH_DIR = "/Users/rkathawate/Desktop/Rakshit_Projects/SoftwareCodingChallenges/WcTool"
 
-# Defining the worker function 
+# Defining the worker functions
 
-def worker(name):
-    print("The name of the file is: ", name)
-    return
+#write docstring 
 
 def count_bytes(filepath):
+    """
+    Counts the number of bytes in the file object provided.
+
+    Args:
+        filepath (str): The path to the file to be processed.
+
+    Returns:
+        int: The number of bytes in the file.
+    """
     #count bytes in the file object provided
     file_object = open_file(filepath, "rb")
     if file_object is None:
@@ -33,7 +40,16 @@ def count_bytes(filepath):
     return len(file_bytes)
     
 def validate_command(command, expected_output):
-    #validate command
+    """
+    Validates the command output against the expected output.
+
+    Args:
+        command (str): The command to be executed.
+        expected_output (str): The expected output of the command.
+
+    Returns:
+        bool: True if the command output matches the expected output, False otherwise.
+    """
     try:
         output = subprocess.check_output(command, shell=True)
         output = output.decode("utf-8").strip()
@@ -54,6 +70,16 @@ def validate_command(command, expected_output):
             return False
 
 def open_file(filepath, option):
+    """
+    Opens the file and returns the file object.
+
+    Args:
+        filepath (str): The path to the file to be opened.
+        option (str): The mode in which the file is to be opened.
+
+    Returns:
+        file object: The file object if the file is found, None otherwise.
+    """
     #open file and return file object
     try:
         file_object = open(filepath, option)
@@ -64,6 +90,15 @@ def open_file(filepath, option):
         return file_object
     
 def close_file(file_object):
+    """
+    Closes the file object.
+
+    Args:
+        file_object (file object): The file object to be closed.
+
+    Returns:
+        None
+    """
     #close file object
     file_object.close()
     return
@@ -71,6 +106,9 @@ def close_file(file_object):
 
 # Defining the main function
 def main():
+    """
+    The main function that parses the command line arguments and executes the appropriate command.
+    """
     parser = argparse.ArgumentParser(description="This is a Python implementation of the Linux WC tool.")
     parser.add_argument("filename", help="Name of the file to be processed.")
     parser.add_argument("-c", "--bytes", help="Count the number of bytes in the file.", action="store_true")
