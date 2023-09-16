@@ -84,6 +84,7 @@ def main():
         print("Command Output: ", expected_output)
         command = "wc -c " + filepath
         validate_command(command, expected_output)
+        
 
 
 # Calling the main function
