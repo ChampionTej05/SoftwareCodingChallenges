@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -95,14 +94,29 @@ func CountWords(filepath string) (int, error) {
 
 func main() {
 	fmt.Println("Hello World!")
-	// values are returned as pointers
-	var filename *string = flag.String("filename", "-", "File name to read from")
-	var countBytes *bool = flag.Bool("c", false, "Count the number of bytes in the file")
-	var countLines *bool = flag.Bool("l", false, "Count the number of lines in the file")
-	var countWords *bool = flag.Bool("w", false, "Count the number of words in the file")
-	flag.Parse()
 
-	fmt.Printf("Hello %s!\n", *filename)
+	var countBytes, countLines, countWords bool
+	// Parse command-line arguments manually
+	commandLineArgs := os.Args
+	for _, arg := range os.Args[1 : len(commandLineArgs)-1] {
+		fmt.Println("arg:", arg)
+		if strings.Contains(arg, "c") {
+			countBytes = true
+		}
+		if strings.Contains(arg, "l") {
+			countLines = true
+		}
+		if strings.Contains(arg, "w") {
+			countWords = true
+		}
+	}
+
+	if !countBytes && !countLines && !countWords {
+		fmt.Println("Usage: ccwc [-l] [-c] [-w] <filename>")
+		os.Exit(1)
+	}
+
+	filename := os.Args[len(os.Args)-1]
 
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -110,7 +124,7 @@ func main() {
 		return
 	}
 	fmt.Println("Current working directory:", cwd)
-	filepath := filepath.Join(cwd, *filename)
+	filepath := filepath.Join(cwd, filename)
 	fmt.Println("File path:", filepath)
 
 	// contents, err := GetFileContents(filepath)
@@ -120,7 +134,7 @@ func main() {
 	// }
 	// fmt.Println("File contents:", string(contents))
 
-	if *countBytes {
+	if countBytes {
 		fmt.Println("Counting bytes...")
 		bytes, err := CountBytes(filepath)
 		if err != nil {
@@ -129,7 +143,7 @@ func main() {
 		}
 		fmt.Println("Byte count:", bytes)
 	}
-	if *countLines {
+	if countLines {
 		fmt.Println("Counting lines...")
 		lines, err := CountLines(filepath)
 		if err != nil {
@@ -139,7 +153,7 @@ func main() {
 		fmt.Println("Line count:", lines)
 	}
 
-	if *countWords {
+	if countWords {
 		fmt.Println("Counting words...")
 		words, err := CountWords(filepath)
 		if err != nil {
