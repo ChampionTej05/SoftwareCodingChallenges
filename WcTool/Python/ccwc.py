@@ -1,5 +1,4 @@
-
-
+#!/usr/bin/env python3
 """
 This is the main file for the WcTool. We will implement Linux WC tool in
 Python. We will use the argparse module to parse the command line arguments.
@@ -37,6 +36,7 @@ import os
 import subprocess
 import locale
 import unicodedata
+import sys
 
 
 # Defining the Constants
@@ -55,6 +55,16 @@ def is_multibyte_locale():
         return False
 
 def count_characters_or_bytes(file_path, use_multibyte):
+    """
+    Counts the number of characters or bytes in the file object provided.
+
+    Args:
+        file_path (str): The path to the file to be processed.
+        use_multibyte (bool): A flag indicating whether to count characters or bytes. If True, counts characters. If False, counts bytes.
+
+    Returns:
+        int: The number of characters or bytes in the file, depending on the value of the use_multibyte flag.
+    """
     if use_multibyte:
         return  count_char(file_path)
     else:
@@ -268,12 +278,28 @@ def main():
     The main function that parses the command line arguments and executes the appropriate command.
     """
     parser = argparse.ArgumentParser(description="This is a Python implementation of the Linux WC tool.")
-    parser.add_argument("filename", help="Name of the file to be processed.")
+    # nargs="?" means that the filename is optional, default="-" means that if no filename is provided, the program will read from STDIN
+    parser.add_argument("filename", help="Name of the file to be processed.", nargs="?", default="-")
     parser.add_argument("-c", "--bytes", help="Count the number of bytes in the file.", action="store_true")
     parser.add_argument("-l", "--lines", help="Count the number of lines in the file.", action="store_true") 
     parser.add_argument("-w", "--words", help="Count the number of words in the file.", action="store_true") 
     parser.add_argument("-m", "--multibyte", help="Count characters (if locale supports multibyte), otherwise count bytes.", action="store_true")  
     args = parser.parse_args()
+
+    cleanup_of_stdin = False
+
+    if args.filename == "-":
+        cleanup_of_stdin = True
+        print("Reading from STDIN.")
+        filename = "stdin.txt"
+        filepath = os.path.join(os.getcwd(), filename)
+        with open(filepath, "w") as f:
+            for line in sys.stdin:
+                f.write(line)
+        
+        args.filename = filename
+    
+
     print("The name of the file is: ", args.filename)
     # filepath = os.path.join(INPUT_FILE_PATH_DIR, args.filename)
     current_dir = os.getcwd()
@@ -309,16 +335,16 @@ def main():
     
     # if no options are provided use default options
     if not (args.bytes or args.lines or args.words or args.multibyte):
-        file_bytes = count_bytes(filepath)
-        print("No of Bytes: ", file_bytes)
-        expected_output = str(file_bytes) + " " + filepath + "\n"
-        command = "wc -c " + filepath
-        validate_command(command, expected_output)
-
         file_lines = count_lines(filepath)
         print("No of Lines: ", file_lines)
         expected_output = str(file_lines) + " " + filepath + "\n"
         command = "wc -l " + filepath
+        validate_command(command, expected_output)
+
+        file_bytes = count_bytes(filepath)
+        print("No of Bytes: ", file_bytes)
+        expected_output = str(file_bytes) + " " + filepath + "\n"
+        command = "wc -c " + filepath
         validate_command(command, expected_output)
 
         file_words = count_words(filepath)
@@ -326,6 +352,10 @@ def main():
         expected_output = str(file_words) + " " + filepath + "\n"
         command = "wc -w " + filepath
         validate_command(command, expected_output)
+
+    if cleanup_of_stdin:    
+        os.remove(filepath)
+
 
 
 # Calling the main function
