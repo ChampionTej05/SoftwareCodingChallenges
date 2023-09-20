@@ -93,6 +93,8 @@ def count_char(filepath):
     character_count = 0
     while bytes_data:
         try:
+            # checking the current element only assuming it is a single byte character
+            # if this fails, it is a multibyte character 
             char = bytes_data[:1].decode("utf-8")
             character_count += 1
 
