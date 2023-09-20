@@ -139,3 +139,29 @@ func TestCountWords(t *testing.T) {
 		t.Errorf("CountWords returned incorrect count for empty file: expected 0, got %d", count)
 	}
 }
+
+func TestCountCharacters(t *testing.T) {
+	// Test with a valid file
+	expectedCount := 99
+	count, err := CountCharacters("test_file.txt")
+	if err != nil {
+		t.Errorf("CountCharacters returned an error: %v", err)
+	}
+	if count != expectedCount {
+		t.Errorf("CountCharacters returned incorrect count: expected %d, got %d", expectedCount, count)
+	}
+
+	// Test with a non-existent file
+	_, err = CountCharacters("nonexistent_file.txt")
+	if !errors.Is(err, ErrFileNotFound) {
+		t.Errorf("CountCharacters did not return expected error for non-existent file: expected %v, got %v", ErrFileNotFound, err)
+	}
+
+	count, err = CountCharacters(emptyTestFilePath)
+	if err != nil {
+		t.Errorf("CountCharacters returned an error for empty file: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("CountCharacters returned incorrect count for empty file: expected 0, got %d", count)
+	}
+}
