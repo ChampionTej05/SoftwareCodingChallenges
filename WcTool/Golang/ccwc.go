@@ -158,27 +158,54 @@ func main() {
 	fmt.Println("Hello World!")
 
 	var countBytes, countLines, countWords, countCharacters bool
+	var cleanupTempFile bool = false
 	// Parse command-line arguments manually
 	commandLineArgs := os.Args
-	for _, arg := range os.Args[1 : len(commandLineArgs)-1] {
-		fmt.Println("arg:", arg)
-		if strings.Contains(arg, "c") {
-			countBytes = true
+
+	fmt.Println("commandLineArgs:", commandLineArgs)
+
+	if len(commandLineArgs) == 1 {
+		fmt.Println("No command-line arguments provided")
+
+		file, err := os.Create("temp_file.txt")
+		if err != nil {
+			fmt.Println("Error creating file:", err)
+			return
 		}
-		if strings.Contains(arg, "l") {
-			countLines = true
+		defer file.Close()
+		cleanupTempFile = true
+		// copy input from stdin to file
+		_, err = io.Copy(file, os.Stdin)
+		if err != nil {
+			fmt.Println("Error copying input to file:", err)
+			return
 		}
-		if strings.Contains(arg, "w") {
-			countWords = true
-		}
-		if strings.Contains(arg, "m") {
-			countCharacters = true
+		fmt.Println("File created: temp_file.txt")
+		os.Args = append(os.Args, "temp_file.txt")
+	} else {
+		for _, arg := range os.Args[1 : len(commandLineArgs)-1] {
+			fmt.Println("arg:", arg)
+			if strings.Contains(arg, "c") {
+				countBytes = true
+			}
+			if strings.Contains(arg, "l") {
+				countLines = true
+			}
+			if strings.Contains(arg, "w") {
+				countWords = true
+			}
+			if strings.Contains(arg, "m") {
+				countCharacters = true
+			}
 		}
 	}
 
 	if !countBytes && !countLines && !countWords && !countCharacters {
-		fmt.Println("Usage: ccwc [-l] [-c] [-w] [-m] <filename>")
-		os.Exit(1)
+		fmt.Println("Going with default Implementation")
+		countLines = true
+		countBytes = true
+		countWords = true
+
 	}
 
 	filename := os.Args[len(os.Args)-1]
@@ -245,5 +272,13 @@ func main() {
 		fmt.Println("Characters count:", characters)
 		expectedOutput := strconv.Itoa(characters) + " " + filename + "\n"
 		ValidateCommand("wc -m "+filename, expectedOutput)
+	}
+
+	if cleanupTempFile {
+		err = os.Remove("temp_file.txt")
+		if err != nil {
+			fmt.Println("Error removing temp file:", err)
+			return
+		}
 	}
 }
