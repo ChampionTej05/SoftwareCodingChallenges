@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 var ErrFileNotFound error = errors.New("file not found")
@@ -92,10 +95,69 @@ func CountWords(filepath string) (int, error) {
 	return wordsCount, nil
 }
 
+func CountCharacters(filepath string) (int, error) {
+	contents, err := GetFileContents(filepath)
+	if err != nil {
+		// fmt.Println("Error getting file contents:", err)
+		return 0, err
+	}
+	characterCount := 0
+	i := 0
+
+	for i < len(contents) {
+		// Decode the next UTF-8 character (single or multi-byte)
+		r, size := utf8.DecodeRune(contents[i:])
+
+		// Handle invalid UTF-8 sequences
+		if r == utf8.RuneError && size == 1 {
+			// Invalid UTF-8 byte, skip it
+			i++
+			continue
+		}
+
+		// Valid character found
+		characterCount++
+		i += size
+	}
+
+	return characterCount, nil
+}
+
+func ValidateCommand(command string, expectedOutput string) bool {
+
+	parts := strings.Fields(command)
+	if len(parts) == 0 {
+
+		fmt.Println("No command provided")
+		return false
+	}
+
+	executable := parts[0]
+	arguments := parts[1:]
+	cmd := exec.Command(executable, arguments...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println("Error running command:", err)
+		return false
+	}
+	actualOutput := strings.TrimSpace(string(output))
+	expectedOutput = strings.TrimSpace(expectedOutput)
+	if actualOutput == expectedOutput {
+		fmt.Println("Command output is correct")
+		return true
+	} else {
+		fmt.Println("Command output is incorrect")
+		fmt.Println("Expected:", expectedOutput)
+		fmt.Println("Actual:", actualOutput)
+		return false
+	}
+
+}
+
 func main() {
 	fmt.Println("Hello World!")
 
-	var countBytes, countLines, countWords bool
+	var countBytes, countLines, countWords, countCharacters bool
 	// Parse command-line arguments manually
 	commandLineArgs := os.Args
 	for _, arg := range os.Args[1 : len(commandLineArgs)-1] {
@@ -109,10 +171,13 @@ func main() {
 		if strings.Contains(arg, "w") {
 			countWords = true
 		}
+		if strings.Contains(arg, "m") {
+			countCharacters = true
+		}
 	}
 
-	if !countBytes && !countLines && !countWords {
-		fmt.Println("Usage: ccwc [-l] [-c] [-w] <filename>")
+	if !countBytes && !countLines && !countWords && !countCharacters {
+		fmt.Println("Usage: ccwc [-l] [-c] [-w] [-m] <filename>")
 		os.Exit(1)
 	}
 
@@ -141,7 +206,10 @@ func main() {
 			fmt.Println("Error getting byte count:", err)
 			return
 		}
+
 		fmt.Println("Byte count:", bytes)
+		expectedOutput := strconv.Itoa(bytes) + " " + filename + "\n"
+		ValidateCommand("wc -c "+filename, expectedOutput)
 	}
 	if countLines {
 		fmt.Println("Counting lines...")
@@ -151,6 +219,8 @@ func main() {
 			return
 		}
 		fmt.Println("Line count:", lines)
+		expectedOutput := strconv.Itoa(lines) + " " + filename + "\n"
+		ValidateCommand("wc -l "+filename, expectedOutput)
 	}
 
 	if countWords {
@@ -161,5 +231,19 @@ func main() {
 			return
 		}
 		fmt.Println("Words count:", words)
+		expectedOutput := strconv.Itoa(words) + " " + filename + "\n"
+		ValidateCommand("wc -w "+filename, expectedOutput)
+	}
+
+	if countCharacters {
+		fmt.Println("Counting characters...")
+		characters, err := CountCharacters(filepath)
+		if err != nil {
+			fmt.Println("Error getting characters count:", err)
+			return
+		}
+		fmt.Println("Characters count:", characters)
+		expectedOutput := strconv.Itoa(characters) + " " + filename + "\n"
+		ValidateCommand("wc -m "+filename, expectedOutput)
 	}
 }
