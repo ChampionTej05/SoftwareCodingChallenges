@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Objects;
 
 public class Main {
@@ -44,7 +45,26 @@ public class Main {
                         outResponse.print("Content-Length: " + responseString.length() + "\r\n");
                         outResponse.print("\r\n");
                         outResponse.print(responseString);
-                    }else{
+                    } else if (subPaths.length >1 && Objects.equals(subPaths[1], "user-agent")){
+                        HashMap < String, String> headers = new HashMap<>();
+                        String headerLine;
+                        while ((headerLine = inRequest.readLine()) != null && !headerLine.isEmpty()) {
+                            String[] headerParts = headerLine.split(": ", 2);
+                            if (headerParts.length == 2) {
+                                headers.put(headerParts[0], headerParts[1]);
+                            }
+                        }
+                        headers.forEach((key, value) -> System.out.println(key + ": " + value));
+                        String userAgent = headers.get("User-Agent");
+                        System.out.println("Sending response " + userAgent);
+                        outResponse.print("HTTP/1.1 200 OK\r\n");
+                        outResponse.print("Content-Type: text/plain\r\n");
+                        outResponse.print("Content-Length: " + userAgent.length() + "\r\n");
+                        outResponse.print("\r\n");
+                        outResponse.print(userAgent);
+
+                    }
+                    else{
                         outResponse.print(notFoundResponse);
                     }
                     outResponse.flush();
