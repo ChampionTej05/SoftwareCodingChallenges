@@ -35,15 +35,19 @@ public class Main {
                     String requestURLPath = requestParts[1];
                     String []subPaths = requestURLPath.split("/");
                     System.out.println("Sub paths: " + Arrays.toString(subPaths));
-                    if (subPaths.length >1 && Objects.equals(subPaths[1], "echo")){
+                    if (subPaths.length == 0 ){
+                        outResponse.print(successResponse);
+                    }else if (subPaths.length >1 && Objects.equals(subPaths[1], "echo")){
                         String responseString = subPaths[2];
                         outResponse.print("HTTP/1.1 200 OK\r\n");
                         outResponse.print("Content-Type: text/plain\r\n");
                         outResponse.print("Content-Length: " + responseString.length() + "\r\n");
                         outResponse.print("\r\n");
                         outResponse.print(responseString);
-                        outResponse.flush();
+                    }else{
+                        outResponse.print(notFoundResponse);
                     }
+                    outResponse.flush();
 
                 } catch (IOException e) {
                     System.err.println("Exception in accepting the client connection " + e.getMessage());
