@@ -1,26 +1,43 @@
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Main {
-  public static void main(String[] args) {
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    System.out.println("Logs from your program will appear here!");
+    static int PORT = 4221;
+    private static boolean running = true;
 
-    // Uncomment this block to pass the first stage
-    //
-     ServerSocket serverSocket = null;
-     Socket clientSocket = null;
+    public static void main(String[] args) {
+        // You can use print statements as follows for debugging, they'll be visible when running tests.
+        System.out.println("Logs from your program will appear here!");
 
-     try {
-       serverSocket = new ServerSocket(4221);
-       // Since the tester restarts your program quite often, setting SO_REUSEADDR
-       // ensures that we don't run into 'Address already in use' errors
-       serverSocket.setReuseAddress(true);
-       clientSocket = serverSocket.accept(); // Wait for connection from client.
-       System.out.println("accepted new connection");
-     } catch (IOException e) {
-       System.out.println("IOException: " + e.getMessage());
-     }
-  }
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+            System.out.println("Server started listening on port " + PORT);
+
+            while (running) {
+                try (
+                        Socket clientSocket = serverSocket.accept();
+                        PrintWriter outResponse = new PrintWriter(clientSocket.getOutputStream(), true)
+                ) {
+                    System.out.println("Client Connection is accepted ");
+                    outResponse.print("HTTP/1.1 200 OK\r\n\r\n");
+                    outResponse.flush();
+                } catch (IOException e) {
+                    System.err.println("Exception in accepting the client connection " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("IOException: " + e.getMessage());
+        }
+    }
+
+    public static void stopServer() {
+        running = false;
+        try (Socket socket = new Socket("localhost", PORT)) {
+            // no-op
+            System.out.println("closed connection from server");
+        } catch (IOException e) {
+            // no-op
+        }
+    }
 }
