@@ -1,11 +1,17 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.Objects;
 
 public class Main {
     static int PORT = 4221;
     private static boolean running = true;
+    static String successResponse = "HTTP/1.1 200 OK\r\n\r\n";
+    static String notFoundResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
 
     public static void main(String[] args) {
         // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -17,14 +23,28 @@ public class Main {
             while (running) {
                 try (
                         Socket clientSocket = serverSocket.accept();
+                        BufferedReader inRequest = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                         PrintWriter outResponse = new PrintWriter(clientSocket.getOutputStream(), true)
                 ) {
                     System.out.println("Client Connection is accepted ");
-                    outResponse.print("HTTP/1.1 200 OK\r\n\r\n");
+                    String requestLine = inRequest.readLine();
+                    String []requestParts = requestLine.split(" "); //[GET, /index.html, HTTP/1.1]
+                    System.out.println("parts of the requests are : " + Arrays.toString(requestParts));
+//                    outResponse.print(successResponse);
+//                    outResponse.flush();
+
+                    String requestURLPath = requestParts[1];
+                    if (Objects.equals(requestURLPath, "/")){
+                        outResponse.print(successResponse);
+                    }else{
+                        // respond with 404
+                        outResponse.print(notFoundResponse);
+                    }
                     outResponse.flush();
                 } catch (IOException e) {
                     System.err.println("Exception in accepting the client connection " + e.getMessage());
                 }
+                running = false;
             }
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
