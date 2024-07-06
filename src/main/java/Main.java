@@ -152,7 +152,7 @@ public class Main {
                 outResponse.print("Content-Type: text/plain\r\n");
                 outResponse.print("Content-Length: " + responseString.length() + "\r\n");
                 if (ALLOWED_ENCODING_ALGORITHMS.contains(acceptEncoding)){
-                    outResponse.write("Content-Encoding: "+ acceptEncoding);
+                    outResponse.write("Content-Encoding: "+ acceptEncoding + "\r\n");
                 }
                 outResponse.print("\r\n");
                 outResponse.print(responseString);
