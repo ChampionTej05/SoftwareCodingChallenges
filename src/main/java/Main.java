@@ -7,30 +7,71 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Main {
     static int PORT = 4221;
+    static final int NO_THREADS = 10;
     private static boolean running = true;
     static String successResponse = "HTTP/1.1 200 OK\r\n\r\n";
     static String notFoundResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
-
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(NO_THREADS);
     public static void main(String[] args) {
         // You can use print statements as follows for debugging, they'll be visible when running tests.
-        System.out.println("Logs from your program will appear here!");
-
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server started listening on port " + PORT);
 
             while (running) {
+                try {
+                    Socket clientSocket = serverSocket.accept();
+                    executorService.submit(new ClientSocketHandler(clientSocket));
+                } catch (IOException e) {
+                    System.err.println("Exception in accepting the client connection: " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("IOException: " + e.getMessage());
+        } finally {
+            executorService.shutdown();
+        }
+
+
+    }
+
+    public static void stopServer() {
+        running = false;
+        try (Socket socket = new Socket("localhost", PORT)) {
+            // no-op
+            System.out.println("closed connection from server");
+        } catch (IOException e) {
+            // no-op
+        }
+    }
+
+    public static class ClientSocketHandler implements Runnable {
+        private final Socket clientSocket;
+
+
+        ClientSocketHandler(Socket clientSocket){
+            this.clientSocket = clientSocket;
+        }
+
+        @Override
+        public void run() {
+
                 try (
-                        Socket clientSocket = serverSocket.accept();
                         BufferedReader inRequest = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                         PrintWriter outResponse = new PrintWriter(clientSocket.getOutputStream(), true)
                 ) {
                     System.out.println("Client Connection is accepted ");
                     String requestLine = inRequest.readLine();
+                    if (requestLine == null){
+                        outResponse.flush();
 
-                    String []requestParts = requestLine.split(" "); //[GET, /index.html, HTTP/1.1]
+                    }
+
+                    String []requestParts = Objects.requireNonNull(requestLine).split(" "); //[GET, /index.html, HTTP/1.1]
                     System.out.println("parts of the requests are : " + Arrays.toString(requestParts));
 
                     String requestURLPath = requestParts[1];
@@ -71,21 +112,14 @@ public class Main {
 
                 } catch (IOException e) {
                     System.err.println("Exception in accepting the client connection " + e.getMessage());
+                } finally {
+                    try{
+                        clientSocket.close();
+                    }catch( IOException e){
+                        e.printStackTrace();
+                    }
                 }
-                running = false;
-            }
-        } catch (IOException e) {
-            System.out.println("IOException: " + e.getMessage());
-        }
-    }
 
-    public static void stopServer() {
-        running = false;
-        try (Socket socket = new Socket("localhost", PORT)) {
-            // no-op
-            System.out.println("closed connection from server");
-        } catch (IOException e) {
-            // no-op
         }
     }
 }
