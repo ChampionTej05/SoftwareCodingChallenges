@@ -131,19 +131,18 @@ public class Main {
                 outResponse.print(SUCCESS_RESPONSE);
             } else if (subPaths.length > 1) {
                 switch (subPaths[1]) {
-                    case "echo" -> handleEchoRequest(outResponse, subPaths);
-                    case "user-agent" -> handleUserAgentRequest(outResponse);
-                    case "files" -> handleFileRequest(outResponse, subPaths, method);
+                    case "echo" -> handleEchoRequest(subPaths);
+                    case "user-agent" -> handleUserAgentRequest();
+                    case "files" -> handleFileRequest(subPaths, method);
                     default -> outResponse.print(NOT_FOUND_RESPONSE);
                 }
             } else {
                 outResponse.print(NOT_FOUND_RESPONSE);
             }
-            outResponse.flush();
             inputStream.close();
         }
 
-        private void handleEchoRequest(PrintWriter outResponse, String[] subPaths) {
+        private void handleEchoRequest( String[] subPaths) {
             if (subPaths.length > 2) {
                 String responseString = subPaths[2];
                 String acceptEncoding = headers.get("Accept-Encoding");
@@ -151,17 +150,21 @@ public class Main {
                 outResponse.print("HTTP/1.1 200 OK\r\n");
                 outResponse.print("Content-Type: text/plain\r\n");
                 outResponse.print("Content-Length: " + responseString.length() + "\r\n");
-                if (ALLOWED_ENCODING_ALGORITHMS.contains(acceptEncoding)){
-                    outResponse.write("Content-Encoding: "+ acceptEncoding + "\r\n");
+                System.out.println("Encoding in the string " + acceptEncoding);
+                if((acceptEncoding!=null) &&
+                        ALLOWED_ENCODING_ALGORITHMS.contains(acceptEncoding)){
+                    outResponse.print("Content-Encoding: " + acceptEncoding + "\r\n");
                 }
                 outResponse.print("\r\n");
                 outResponse.print(responseString);
+
             } else {
                 outResponse.print(NOT_FOUND_RESPONSE);
             }
+            outResponse.flush();
         }
 
-        private void handleFileRequest(PrintWriter outResponse, String[] subPaths, String method) throws FileNotFoundException {
+        private void handleFileRequest( String[] subPaths, String method) throws FileNotFoundException {
             // get the file path if exists in URL path else not found
             if (subPaths.length < 3) {
                 outResponse.print(NOT_FOUND_RESPONSE);
@@ -239,7 +242,7 @@ public class Main {
             }
         }
 
-        private void handleUserAgentRequest( PrintWriter outResponse) {
+        private void handleUserAgentRequest() {
 
             String userAgent = headers.get("User-Agent");
             if (userAgent != null) {
