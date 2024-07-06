@@ -3,6 +3,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -16,6 +17,8 @@ public class Main {
     static int PORT = 4221;
     private static boolean running = true;
     private static String directoryPath = null;
+
+    private static final List<String> ALLOWED_ENCODING_ALGORITHMS = List.of("gzip");
 
     public static void main(String[] args) {
         Map<String, String> arguments = parseArguments(args);
@@ -143,9 +146,14 @@ public class Main {
         private void handleEchoRequest(PrintWriter outResponse, String[] subPaths) {
             if (subPaths.length > 2) {
                 String responseString = subPaths[2];
+                String acceptEncoding = headers.get("Accept-Encoding");
+
                 outResponse.print("HTTP/1.1 200 OK\r\n");
                 outResponse.print("Content-Type: text/plain\r\n");
                 outResponse.print("Content-Length: " + responseString.length() + "\r\n");
+                if (ALLOWED_ENCODING_ALGORITHMS.contains(acceptEncoding)){
+                    outResponse.write("Content-Encoding: "+ acceptEncoding);
+                }
                 outResponse.print("\r\n");
                 outResponse.print(responseString);
             } else {
