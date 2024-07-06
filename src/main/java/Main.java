@@ -129,6 +129,7 @@ public class Main {
 
             if (subPaths.length == 0) {
                 outResponse.print(SUCCESS_RESPONSE);
+                outResponse.flush();
             } else if (subPaths.length > 1) {
                 switch (subPaths[1]) {
                     case "echo" -> handleEchoRequest(subPaths);
@@ -138,6 +139,7 @@ public class Main {
                 }
             } else {
                 outResponse.print(NOT_FOUND_RESPONSE);
+                outResponse.flush();
             }
             inputStream.close();
         }
@@ -189,7 +191,6 @@ public class Main {
             }
         }
 
-//TODO: Debug the implementation of this class
         private void handlePostFileRequest(File file){
             try(FileOutputStream fs = new FileOutputStream(file)) {
                 StringBuffer bodyBuffer = new StringBuffer();
@@ -255,6 +256,7 @@ public class Main {
             } else {
                 outResponse.print(NOT_FOUND_RESPONSE);
             }
+            outResponse.flush();
         }
 
         private void processRequestInformation() throws IOException{
