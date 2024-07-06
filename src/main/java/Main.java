@@ -214,6 +214,7 @@ public class Main {
             if (!file.exists() || !file.isFile()) {
                 System.out.println("Requested file does not exist at the server " + file.getAbsolutePath());
                 outResponse.print(NOT_FOUND_RESPONSE);
+                outResponse.flush();
 
             } else {
 
