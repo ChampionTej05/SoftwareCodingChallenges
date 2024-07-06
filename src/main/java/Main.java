@@ -24,11 +24,12 @@ public class Main {
             System.out.println("Directory path: " + directoryPath);
             // Use directoryPath as needed in your application
             // Rest of your server code
-            startServer();
+
         } else {
             System.out.println("Failed to parse command line properties. Directory Path is not provided ");
-            System.exit(1);
+
         }
+        startServer();
 
 
     }
@@ -148,6 +149,11 @@ public class Main {
             if (subPaths.length < 3) {
                 outResponse.print(NOT_FOUND_RESPONSE);
             } else {
+
+                if (directoryPath == null){
+                    outResponse.print(NOT_FOUND_RESPONSE);
+                    return;
+                }
                 // get the directory path from command line and check if the file exists or not
                 String filename = subPaths[2];
                 File file = new File(directoryPath, filename);
