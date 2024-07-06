@@ -11,6 +11,7 @@ public class Main {
     static final int NO_THREADS = 10;
     private static final String SUCCESS_RESPONSE = "HTTP/1.1 200 OK\r\n\r\n";
     private static final String NOT_FOUND_RESPONSE = "HTTP/1.1 404 Not Found\r\n\r\n";
+    private static final String HTTP_201_CREATED_RESPONSE = "HTTP/1.1 201 Created\r\n\r\n";
     private static final ExecutorService executorService = Executors.newFixedThreadPool(NO_THREADS);
     static int PORT = 4221;
     private static boolean running = true;
@@ -57,7 +58,8 @@ public class Main {
             while (running) {
                 try {
                     Socket clientSocket = serverSocket.accept();
-                    executorService.submit(new ClientSocketHandler(clientSocket));
+                    executorService.submit(new ClientSocketHandler(
+                            clientSocket, clientSocket.getInputStream(), clientSocket.getOutputStream()));
                 } catch (IOException e) {
                     System.err.println("Exception in accepting the client connection: " + e.getMessage());
                 }
@@ -81,20 +83,28 @@ public class Main {
 
     public static class ClientSocketHandler implements Runnable {
         private final Socket clientSocket;
+        Map<String, String> headers ;
+        String requestLine;
+        InputStream inputStream ;
+        OutputStream outputStream;
+        PrintWriter outResponse;
+
+        BufferedReader inRequest;
 
 
-        public ClientSocketHandler(Socket clientSocket) {
+        public ClientSocketHandler(Socket clientSocket, InputStream inputStream, OutputStream outputStream) {
             this.clientSocket = clientSocket;
+            this.inputStream = inputStream;
+            this.outputStream = outputStream;
+            this.outResponse = new PrintWriter(this.outputStream, true);
+            this.inRequest = new BufferedReader(new InputStreamReader(inputStream));
         }
 
         @Override
         public void run() {
-            try (
-                    BufferedReader inRequest = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    PrintWriter outResponse = new PrintWriter(clientSocket.getOutputStream(), true)
-            ) {
+            try  {
                 System.out.println("Client Connection is accepted");
-                handleClientRequest(inRequest, outResponse);
+                handleClientRequest();
             } catch (IOException e) {
                 System.err.println("Exception in accepting the client connection " + e.getMessage());
             } finally {
@@ -102,17 +112,15 @@ public class Main {
             }
         }
 
-        private void handleClientRequest(BufferedReader inRequest, PrintWriter outResponse) throws IOException {
-            String requestLine = inRequest.readLine();
-            if (requestLine == null) {
-                outResponse.flush();
-                return;
-            }
+        private void handleClientRequest( ) throws IOException {
+            processRequestInformation();
+//            readRequestBody();
 
             String[] requestParts = requestLine.split(" ");
             System.out.println("Parts of the request are: " + Arrays.toString(requestParts));
 //            assuming it is always gonna have more than one part ?
             String requestURLPath = requestParts[1];
+            String method = requestParts[0];
             String[] subPaths = requestURLPath.split("/");
             System.out.println("Sub paths: " + Arrays.toString(subPaths));
 
@@ -121,14 +129,15 @@ public class Main {
             } else if (subPaths.length > 1) {
                 switch (subPaths[1]) {
                     case "echo" -> handleEchoRequest(outResponse, subPaths);
-                    case "user-agent" -> handleUserAgentRequest(inRequest, outResponse);
-                    case "files" -> handleFileRequest(outResponse, subPaths);
+                    case "user-agent" -> handleUserAgentRequest(outResponse);
+                    case "files" -> handleFileRequest(outResponse, subPaths, method);
                     default -> outResponse.print(NOT_FOUND_RESPONSE);
                 }
             } else {
                 outResponse.print(NOT_FOUND_RESPONSE);
             }
             outResponse.flush();
+            inputStream.close();
         }
 
         private void handleEchoRequest(PrintWriter outResponse, String[] subPaths) {
@@ -144,54 +153,84 @@ public class Main {
             }
         }
 
-        private void handleFileRequest(PrintWriter outResponse, String[] subPaths) throws FileNotFoundException {
+        private void handleFileRequest(PrintWriter outResponse, String[] subPaths, String method) throws FileNotFoundException {
             // get the file path if exists in URL path else not found
             if (subPaths.length < 3) {
                 outResponse.print(NOT_FOUND_RESPONSE);
+                outResponse.flush();
+                return;
             } else {
 
                 if (directoryPath == null){
                     outResponse.print(NOT_FOUND_RESPONSE);
+                    outResponse.flush();
                     return;
                 }
                 // get the directory path from command line and check if the file exists or not
                 String filename = subPaths[2];
                 File file = new File(directoryPath, filename);
-                if (!file.exists() || !file.isFile()) {
-                    System.out.println("Requested file does not exist at the server " + file.getAbsolutePath());
-                    outResponse.print(NOT_FOUND_RESPONSE);
-
-                } else {
-
-
-                    System.out.println("Sending response: " + file.getAbsolutePath());
-                    outResponse.print("HTTP/1.1 200 OK\r\n");
-                    outResponse.print("Content-Type: application/octet-stream\r\n");
-                    outResponse.print("Content-Length: " + file.length() + "\r\n");
-                    outResponse.print("\r\n");
-                    outResponse.flush();
-                    // Write binary data
-                    // Write file data
-                    try (OutputStream os = clientSocket.getOutputStream();
-                         FileInputStream fis = new FileInputStream(file)) {
-                        byte[] buffer = new byte[4096];
-                        int bytesRead;
-                        while ((bytesRead = fis.read(buffer)) != -1) {
-                            os.write(buffer, 0, bytesRead);
-                        }
-                        os.flush();
-                    } catch (IOException e) {
-                        System.err.println("Error sending file data: " + e.getMessage());
-                    }
-
-
+                switch(method){
+                    case "GET" -> handleGetFileRequest(file);
+                    case "POST" -> handlePostFileRequest(file);
+                    default -> outResponse.print(NOT_FOUND_RESPONSE);
                 }
+
 
             }
         }
 
-        private void handleUserAgentRequest(BufferedReader inRequest, PrintWriter outResponse) throws IOException {
-            Map<String, String> headers = readHeaders(inRequest);
+//TODO: Debug the implementation of this class
+        private void handlePostFileRequest(File file){
+            try(FileOutputStream fs = new FileOutputStream(file)) {
+                StringBuffer bodyBuffer = new StringBuffer();
+                while(inRequest.ready()){
+                    bodyBuffer.append((char) inRequest.read());
+                }
+                String requestBody = bodyBuffer.toString();
+                System.out.println("Body read: "+requestBody);
+
+                fs.write(requestBody.getBytes());
+                fs.flush();
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void handleGetFileRequest(File file){
+            if (!file.exists() || !file.isFile()) {
+                System.out.println("Requested file does not exist at the server " + file.getAbsolutePath());
+                outResponse.print(NOT_FOUND_RESPONSE);
+
+            } else {
+
+
+                System.out.println("Sending response: " + file.getAbsolutePath());
+                outResponse.print("HTTP/1.1 200 OK\r\n");
+                outResponse.print("Content-Type: application/octet-stream\r\n");
+                outResponse.print("Content-Length: " + file.length() + "\r\n");
+                outResponse.print("\r\n");
+                outResponse.flush();
+                // Write binary data
+                // Write file data
+                try (OutputStream os = clientSocket.getOutputStream();
+                     FileInputStream fis = new FileInputStream(file)) {
+                    byte[] buffer = new byte[4096];
+                    int bytesRead;
+                    while ((bytesRead = fis.read(buffer)) != -1) {
+                        os.write(buffer, 0, bytesRead);
+                    }
+                    os.flush();
+                } catch (IOException e) {
+                    System.err.println("Error sending file data: " + e.getMessage());
+                }
+
+
+            }
+        }
+
+        private void handleUserAgentRequest( PrintWriter outResponse) {
+
             String userAgent = headers.get("User-Agent");
             if (userAgent != null) {
                 System.out.println("Sending response: " + userAgent);
@@ -205,10 +244,24 @@ public class Main {
             }
         }
 
-        private Map<String, String> readHeaders(BufferedReader inRequest) throws IOException {
+        private void processRequestInformation() throws IOException{
+//            this carries information of "POST /files/number HTTP/1.1"
+
+            requestLine = inRequest.readLine();
+
+            if (requestLine == null) {
+                System.out.println("Null request line now");
+                throw new IOException("Request Line is empty ");
+            }
+
+            headers = readHeaders();
+        }
+
+        private Map<String, String> readHeaders() throws IOException {
             Map<String, String> headers = new HashMap<>();
             String headerLine;
             while ((headerLine = inRequest.readLine()) != null && !headerLine.isEmpty()) {
+                System.out.println("headerline : "+ headerLine);
                 String[] headerParts = headerLine.split(": ", 2);
                 if (headerParts.length == 2) {
                     headers.put(headerParts[0], headerParts[1]);
