@@ -169,7 +169,6 @@ public class Main {
             if (subPaths.length < 3) {
                 outResponse.print(NOT_FOUND_RESPONSE);
                 outResponse.flush();
-                return;
             } else {
 
                 if (directoryPath == null){
