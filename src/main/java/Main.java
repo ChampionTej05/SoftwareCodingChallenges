@@ -191,6 +191,8 @@ public class Main {
 
                 fs.write(requestBody.getBytes());
                 fs.flush();
+                outResponse.print(HTTP_201_CREATED_RESPONSE);
+                outResponse.flush();
 
             } catch (IOException e) {
                 throw new RuntimeException(e);
