@@ -14,7 +14,7 @@ jobs:
 
       - name: Check for Test Files
         run: |
-          if [ -z "$(find . -name '*test*.js')" ]; then
+          if [ -z "$(find . -name '*test*.*' -o -name '*.spec.*' -o -name '*.test.*')" ]; then
             echo "No test files found. Please add a test file before submitting the PR."
             exit 1
           fi
